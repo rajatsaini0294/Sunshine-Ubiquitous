@@ -37,6 +37,7 @@ import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -87,8 +88,11 @@ public class WatchFace extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
+
         Paint mBackgroundPaint;
         Paint mTimeTextPaint;
+        Paint mDateTextPaint;
+
         boolean mAmbient;
         Calendar mCalendar;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -98,10 +102,12 @@ public class WatchFace extends CanvasWatchFaceService {
                 invalidate();
             }
         };
-        float mXOffset;
+        float mXOffsetTime;
+        float mXOffsetDate;
         float mYOffset;
+        float mYOffsetDate;
         float timeWidth;
-
+        float dateWidth;
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
          * disable anti-aliasing in ambient mode.
@@ -120,14 +126,20 @@ public class WatchFace extends CanvasWatchFaceService {
                     .build());
             Resources resources = WatchFace.this.getResources();
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
+            mYOffsetDate = resources.getDimension(R.dimen.digital_y_offset_date);
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
 
             mTimeTextPaint = new Paint();
-            mTimeTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            mTimeTextPaint = createTimeTextPaint(resources.getColor(R.color.digital_text));
+
+            mDateTextPaint = new Paint();
+            mDateTextPaint = createDateTextPaint(resources.getColor(R.color.digital_text));
 
             timeWidth = mTimeTextPaint.measureText("11:56");
+            dateWidth = mDateTextPaint.measureText("WED, JUN 13, 2016");
+
             mCalendar = Calendar.getInstance();
         }
 
@@ -137,12 +149,21 @@ public class WatchFace extends CanvasWatchFaceService {
             super.onDestroy();
         }
 
-        private Paint createTextPaint(int textColor) {
+        private Paint createTimeTextPaint(int textColor) {
             Paint paint = new Paint();
             paint.setColor(textColor);
             paint.setTypeface(NORMAL_TYPEFACE);
             paint.setAntiAlias(true);
             paint.setTextSize(getResources().getDimension(R.dimen.digital_text_size));
+            return paint;
+        }
+
+        private Paint createDateTextPaint(int textColor){
+            Paint paint = new Paint();
+            paint.setColor(textColor);
+            paint.setTypeface(NORMAL_TYPEFACE);
+            paint.setAntiAlias(true);
+            paint.setTextSize(getResources().getDimension(R.dimen.digital_date_size));
             return paint;
         }
 
@@ -262,15 +283,28 @@ public class WatchFace extends CanvasWatchFaceService {
             float centerX = bounds.width() / 2f;
             float centerY = bounds.height() / 2f;
 
-            mXOffset = centerX - (timeWidth / 2f);
+            float faceYOffset;
+
+            mXOffsetTime = centerX - (timeWidth / 2f);
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
             String text =String.format("%d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY), mCalendar.get(Calendar.MINUTE));
 
-            mXOffset = centerX - (timeWidth/2f);
-            canvas.drawText(text, mXOffset, mYOffset, mTimeTextPaint);
+            mXOffsetTime = centerX - (timeWidth/2f);
+            canvas.drawText(text, mXOffsetTime, mYOffset, mTimeTextPaint);
+
+            // Date
+            String dayName = mCalendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault());
+            String monthName = mCalendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault());
+            int dayOfMonth = mCalendar.get(Calendar.DAY_OF_MONTH);
+            int year = mCalendar.get(Calendar.YEAR);
+            String dateText = String.format("%s, %s %d, %d", dayName.toUpperCase(), monthName.toUpperCase(), dayOfMonth, year);
+
+            mXOffsetDate = centerX - (dateWidth/2f);
+
+            canvas.drawText(dateText, mXOffsetDate, mYOffsetDate, mDateTextPaint);
         }
 
         /**

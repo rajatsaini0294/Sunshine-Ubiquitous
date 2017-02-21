@@ -100,6 +100,7 @@ public class WatchFace extends CanvasWatchFaceService {
         };
         float mXOffset;
         float mYOffset;
+        float timeWidth;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -126,6 +127,7 @@ public class WatchFace extends CanvasWatchFaceService {
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            timeWidth = mTextPaint.measureText("11:56");
             mCalendar = Calendar.getInstance();
         }
 
@@ -140,6 +142,7 @@ public class WatchFace extends CanvasWatchFaceService {
             paint.setColor(textColor);
             paint.setTypeface(NORMAL_TYPEFACE);
             paint.setAntiAlias(true);
+            paint.setTextSize(getResources().getDimension(R.dimen.digital_text_size));
             return paint;
         }
 
@@ -182,7 +185,7 @@ public class WatchFace extends CanvasWatchFaceService {
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
-
+/*
             // Load resources that have alternate values for round watches.
             Resources resources = WatchFace.this.getResources();
             boolean isRound = insets.isRound();
@@ -192,6 +195,8 @@ public class WatchFace extends CanvasWatchFaceService {
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
 
             mTextPaint.setTextSize(textSize);
+
+            */
         }
 
         @Override
@@ -254,15 +259,17 @@ public class WatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
+            float centerX = bounds.width() / 2f;
+            float centerY = bounds.height() / 2f;
+
+            mXOffset = centerX - (timeWidth / 2f);
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
-            String text = mAmbient
-                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE))
-                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+            String text =String.format("%d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY), mCalendar.get(Calendar.MINUTE));
+
+            mXOffset = centerX - (timeWidth/2f);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
         }
 
